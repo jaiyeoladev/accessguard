@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Access governance evidence · {{ scan.tenant_name }}</title>
+<style>
+  :root { --ink:#14202e; --muted:#5b6b7c; --line:#d9e0e7; --soft:#f3f6f8; --brand:#0f5c63;
+          --critical:#a1192b; --high:#b8461b; --medium:#8a6200; --low:#2d5fa8; --info:#5b6b7c; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; color: var(--ink); background: #fff; }
+  .page { max-width: 1000px; margin: 0 auto; padding: 40px 32px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 17px; margin: 36px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--brand); }
+  h3 { font-size: 14px; margin: 22px 0 8px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; color: var(--brand); font-weight: 700; margin: 0 0 8px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+  .meta div { background: var(--soft); border-radius: 6px; padding: 10px 12px; }
+  .meta b { display: block; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .kpi { border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+  .kpi span { display: block; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: var(--soft); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sev { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; color: #fff; }
+  .sev-critical { background: var(--critical); } .sev-high { background: var(--high); } .sev-medium { background: var(--medium); }
+  .sev-low { background: var(--low); } .sev-info { background: var(--info); }
+  .finding { border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 6px; padding: 12px 14px; margin: 10px 0; break-inside: avoid; }
+  .finding.critical { border-left-color: var(--critical); } .finding.high { border-left-color: var(--high); }
+  .finding.medium { border-left-color: var(--medium); } .finding.low { border-left-color: var(--low); }
+  .finding h4 { margin: 0 0 4px; font-size: 14px; }
+  .finding dl { display: grid; grid-template-columns: 170px 1fr; gap: 2px 12px; margin: 8px 0; font-size: 12px; }
+  .finding dt { color: var(--muted); }
+  .decision { background: var(--soft); border-radius: 4px; padding: 6px 10px; font-size: 12px; margin-top: 8px; }
+  .warn { background: #fff6e0; border: 1px solid #f0d58a; border-radius: 6px; padding: 8px 12px; margin: 6px 0; }
+  .demo { background: #e8f3f4; border: 1px solid #b6d9dc; border-radius: 6px; padding: 8px 12px; margin: 12px 0; }
+  footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+  @media (max-width: 720px) { .meta, .kpis { grid-template-columns: 1fr 1fr; } .finding dl { grid-template-columns: 1fr; } }
+  @media print { .page { padding: 0; } h2 { break-after: avoid; } a { color: inherit; text-decoration: none; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="eyebrow">Access governance evidence pack</p>
+  <h1>{{ scan.tenant_name }}</h1>
+  <p class="muted">Identity security review of Microsoft Entra ID, produced by AccessGuard {{ version }}.</p>
+  {% if scan.source == 'demo' %}<div class="demo"><strong>Demo data.</strong> This report was generated from a fictional tenant and is not evidence for any real organisation.</div>{% endif %}
+
+  <div class="meta">
+    <div><b>Scan</b>#{{ scan.id }}</div>
+    <div><b>Data collected</b>{{ scan.collected_at|dt }}</div>
+    <div><b>Report generated</b>{{ generated_at|dt }}</div>
+    <div><b>Tenant ID</b><span class="small">{{ scan.tenant_id }}</span></div>
+  </div>
+
+  <h2>Summary</h2>
+  <div class="kpis">
+    <div class="kpi"><span>{{ "{:,}".format(summary.identities) }}</span>Identities in scope</div>
+    <div class="kpi"><span>{{ summary.privileged }}</span>Privileged identities</div>
+    <div class="kpi"><span>{{ summary.total }}</span>Findings</div>
+    <div class="kpi"><span>{{ summary.open }}</span>Still open</div>
+    <div class="kpi"><span>{{ summary.reviewed }}</span>With a decision</div>
+  </div>
+  <table>
+    <thead><tr><th>Severity</th>{% for key, label in statuses.items() %}<th class="num">{{ label }}</th>{% endfor %}<th class="num">Total</th></tr></thead>
+    <tbody>
+    {% for s in severities if grouped[s] %}
+      <tr><td><span class="sev sev-{{ s }}">{{ s|capitalize }}</span></td>
+      {% for key in statuses %}<td class="num">{{ matrix[s][key] }}</td>{% endfor %}
+      <td class="num"><strong>{{ grouped[s]|length }}</strong></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Scope and method</h2>
+  <p>Data was read from Microsoft Graph using application permissions that grant read access only. AccessGuard makes no changes to the tenant.</p>
+  <table>
+    <thead><tr><th>Permission</th><th>Used for</th></tr></thead>
+    <tbody>{% for name, purpose in permissions %}<tr><td>{{ name }}</td><td>{{ purpose }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="small muted">In scope: {{ summary.users }} user accounts ({{ summary.guests }} guests) and {{ summary.nonhuman }} non-Microsoft service principals, of which {{ summary.ai_agents }} were flagged as possible AI agents by a name/tag heuristic.</p>
+  {% for w in scan.warnings %}<div class="warn">{{ w }}</div>{% endfor %}
+  {% if skipped %}
+  <h3>Checks not performed</h3>
+  <ul>{% for r in skipped %}<li>{{ r.id }} {{ r.title }} — required data unavailable ({{ r.requires|join(', ') }})</li>{% endfor %}</ul>
+  {% endif %}
+
+  <h2>Findings</h2>
+  {% for s in severities if grouped[s] %}
+    <h3>{{ s|capitalize }} ({{ grouped[s]|length }})</h3>
+    {% for f in grouped[s] %}{% set r = reviews.get(f.fingerprint) %}
+    <div class="finding {{ f.severity }}">
+      <h4>{{ f.title }} — {{ f.object_name }}</h4>
+      <div class="small muted">{{ f.rule_id }} · {{ f.category }} · {{ f.object_type|objtype }} · ref {{ f.fingerprint }}</div>
+      <p>{{ f.summary }}</p>
+      <dl>{% for k, v in f.evidence.items() %}<dt>{{ k }}</dt><dd>{{ v|ev }}</dd>{% endfor %}</dl>
+      <div class="small"><strong>Recommended action:</strong> {{ f.remediation }}</div>
+      <div class="decision"><strong>Decision:</strong> {{ statuses[status_of(f)] }}{% if r %} · {{ r.reviewer }} · {{ r.updated_at|dt }}{% if r.justification %} — {{ r.justification }}{% endif %}{% else %} · not yet reviewed{% endif %}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>No findings.</p>
+  {% endfor %}
+
+  <h2>Review audit log</h2>
+  {% if log %}
+  <table>
+    <thead><tr><th>When</th><th>Reviewer</th><th>Decision</th><th>Finding</th><th>Justification</th></tr></thead>
+    <tbody>{% for h in log %}<tr><td class="small">{{ h.at|dt }}</td><td>{{ h.reviewer }}</td><td>{{ statuses.get(h.status, h.status) }}</td><td>{{ h.rule_id }} · {{ h.object_name }}</td><td>{{ h.justification or '—' }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="muted">No review decisions have been recorded.</p>{% endif %}
+
+  <footer>Generated by AccessGuard {{ version }}. Findings reflect the tenant state at the collection time above and should be confirmed before remediation. Print this page to PDF to file it with your audit evidence.</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Dashboard{% endblock %} · AccessGuard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>AccessGuard</a>
+    {% if latest %}
+    <nav class="nav" aria-label="Main">
+      <a href="/" {% if nav == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+      <a href="/findings" {% if nav in ('findings', 'finding') %}aria-current="page"{% endif %}>Findings</a>
+      <a href="/identities" {% if nav == 'identities' %}aria-current="page"{% endif %}>Identities</a>
+      <a href="/scans" {% if nav == 'scans' %}aria-current="page"{% endif %}>Scans &amp; audit log</a>
+    </nav>
+    <div class="tenant">
+      <span class="tenant-name">{{ latest.tenant_name }}</span>
+      {% if latest.source == 'demo' %}<span class="pill pill-demo">Demo data</span>{% else %}<span class="pill pill-live">Live tenant</span>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</header>
+<main class="wrap">
+  {% block content %}{% endblock %}
+</main>
+<footer class="wrap footer">
+  AccessGuard {{ version }} · Read-only analysis of Microsoft Entra ID. Nothing in your tenant is changed.
+</footer>
+</body>
+</html>

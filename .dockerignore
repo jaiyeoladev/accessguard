@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+venv
+data
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+__pycache__
+*.egg-info
+.pytest_cache
+.ruff_cache
+tests
+docs/images

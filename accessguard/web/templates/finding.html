@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev, status_pill %}
+{% block title %}{{ f.title }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/findings">← Findings</a></p>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ f.rule_id }} · {{ f.category }}</p>
+    <h1>{{ f.title }}</h1>
+    <p class="lede">{{ f.object_name }} <span class="muted">({{ f.object_type|objtype }})</span></p>
+  </div>
+  <div class="actions">{{ sev(f.severity) }} {{ status_pill(status) }}</div>
+</div>
+
+<div class="grid-2 wide-left">
+  <div>
+    <section class="panel">
+      <h2>What we found</h2>
+      <p>{{ f.summary }}</p>
+      <dl class="evidence">
+        {% for k, v in f.evidence.items() %}
+        <dt>{{ k }}</dt><dd>{{ v|ev }}</dd>
+        {% endfor %}
+      </dl>
+    </section>
+    <section class="panel">
+      <h2>Why it matters</h2>
+      <p>{{ f.why }}</p>
+      <h2>How to fix it</h2>
+      <p>{{ f.remediation }}</p>
+      <p class="muted small">AccessGuard is read-only and will not make this change for you.</p>
+    </section>
+  </div>
+
+  <div>
+    <section class="panel">
+      <h2>Record a decision</h2>
+      {% if error %}<div class="notice notice-error" role="alert">{{ error }}</div>{% endif %}
+      <form method="post" action="/findings/{{ f.fingerprint }}/review" class="stack">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <label>Decision
+          <select name="decision">
+            {% for key, label in statuses.items() %}
+            <option value="{{ key }}" {% if (form.decision or status) == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Reviewer
+          <input name="reviewer" maxlength="120" required value="{{ form.reviewer or (review.reviewer if review and review.reviewer != 'AccessGuard' else '') }}" placeholder="Your name">
+        </label>
+        <label>Justification <span class="muted small">(required for risk accepted / false positive)</span>
+          <textarea name="justification" rows="4" maxlength="2000" placeholder="e.g. Break-glass account, excluded by design; reviewed quarterly">{{ form.justification or '' }}</textarea>
+        </label>
+        <button class="btn btn-primary" type="submit">Save decision</button>
+      </form>
+      <p class="muted small">Decisions carry over to future scans. A finding marked remediated reopens automatically if it is detected again.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Decision history</h2>
+      {% if history %}
+      <ol class="timeline">
+        {% for h in history %}
+        <li>{{ status_pill(h.status) }} <strong>{{ h.reviewer }}</strong> <span class="muted small">{{ h.at|dt }}</span>
+          {% if h.justification %}<p class="small">{{ h.justification }}</p>{% endif %}</li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="muted">No decisions recorded yet.</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

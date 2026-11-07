@@ -1,0 +1,25 @@
+{% from "_macros.html" import sev, status_pill %}
+{% set table_rows = rows if rows is defined else top_findings %}
+{% set lookup = state_obj if state_obj is defined else state %}
+{% if table_rows %}
+<div class="table-wrap">
+<table class="table">
+  <thead>
+    <tr><th>Severity</th><th>Finding</th><th>Identity</th><th>Detail</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+  {% for f in table_rows %}
+    <tr>
+      <td>{{ sev(f.severity) }}</td>
+      <td><a href="/findings/{{ f.fingerprint }}">{{ f.title }}</a><div class="muted small">{{ f.rule_id }} · {{ f.category }}</div></td>
+      <td>{{ f.object_name }}<div class="muted small">{{ f.object_type|objtype }}</div></td>
+      <td class="detail">{{ f.summary }}</td>
+      <td>{{ status_pill(lookup.status(f)) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">No findings match.</p>
+{% endif %}

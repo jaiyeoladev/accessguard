@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev, scan_buttons %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ state.scan.tenant_name }}</h1>
+    <p class="muted">Scan #{{ state.scan.id }} · {{ state.scan.collected_at|dt }}
+      {% if delta %} · <strong>{{ delta.new }}</strong> new and <strong>{{ delta.resolved }}</strong> resolved since scan #{{ delta.previous.id }}{% endif %}</p>
+  </div>
+  <div class="actions">
+    {{ scan_buttons(csrf_token, graph_configured, compact=True) }}
+    <a class="btn" href="/export/report.html">Evidence report</a>
+  </div>
+</div>
+
+{% if state.snap.source == 'demo' %}
+<div class="notice notice-info">You are looking at a fictional demo tenant. Connect a real tenant with <code>docs/entra-setup.md</code>.</div>
+{% endif %}
+{% for w in state.scan.warnings %}
+<div class="notice notice-warn">{{ w }}</div>
+{% endfor %}
+
+<section class="metrics" aria-label="Summary">
+  <div class="metric"><span class="metric-value">{{ "{:,}".format(summary.identities) }}</span><span class="metric-label">Identities monitored</span></div>
+  <div class="metric metric-accent"><span class="metric-value">{{ summary.open }}</span><span class="metric-label">Open risks to review</span></div>
+  <div class="metric"><span class="metric-value">{{ summary.severity.critical + summary.severity.high }}</span><span class="metric-label">Critical or high</span></div>
+  <div class="metric"><span class="metric-value">{{ summary.dormant }}</span><span class="metric-label">Dormant accounts</span></div>
+  <div class="metric"><span class="metric-value">{{ summary.privileged }}</span><span class="metric-label">Privileged identities</span></div>
+  <div class="metric"><span class="metric-value">{{ summary.nonhuman }}</span><span class="metric-label">Non-human identities ({{ summary.ai_agents }} possible AI agents)</span></div>
+</section>
+
+<div class="grid-2">
+  <section class="panel">
+    <h2>Open risks by severity</h2>
+    <ul class="bars">
+      {% for s in severities if s != 'info' %}
+      <li>
+        <a href="/findings?severity={{ s }}" class="bar-label">{{ sev(s) }}</a>
+        <progress class="bar bar-{{ s }}" value="{{ summary.severity[s] }}" max="{{ [summary.open, 1]|max }}"></progress>
+        <span class="bar-count">{{ summary.severity[s] }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <h3>By category</h3>
+    <ul class="chips">
+      {% for name, count in categories %}
+      <li><a href="/findings?category={{ name|urlencode }}">{{ name }} <span class="chip-count">{{ count }}</span></a></li>
+      {% endfor %}
+    </ul>
+    <p class="muted small">{{ summary.reviewed }} of {{ summary.total }} findings have a review decision.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Highest-risk identities</h2>
+    {% if top_identities %}
+    <table class="table compact">
+      <thead><tr><th>Identity</th><th>Type</th><th class="num">Open findings</th><th class="num">Risk score</th></tr></thead>
+      <tbody>
+      {% for oid, s in top_identities %}
+        <tr>
+          <td><a href="/findings?q={{ s.name|urlencode }}">{{ s.name }}</a></td>
+          <td class="muted">{{ s.type|objtype }}</td>
+          <td class="num">{{ s.count }}</td>
+          <td class="num"><strong>{{ s.score }}</strong></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted small">Risk score = sum of open findings weighted by severity (critical 10, high 6, medium 3, low 1).</p>
+    {% else %}
+    <p class="muted">No open findings — nice work.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Top open findings</h2>
+    <a href="/findings">View all {{ summary.open }} →</a>
+  </div>
+  {% include "_findings_table.html" with context %}
+</section>
+
+{% if skipped %}
+<section class="panel">
+  <h2>Checks skipped in this scan</h2>
+  <ul class="plain">
+  {% for r in skipped %}<li><strong>{{ r.id }}</strong> {{ r.title }} — needs: {{ r.requires|join(', ') }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

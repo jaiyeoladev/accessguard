@@ -1,0 +1,18 @@
+{% macro sev(s) -%}
+<span class="sev sev-{{ s }}">{{ s|capitalize }}</span>
+{%- endmacro %}
+
+{% macro status_pill(st) -%}
+<span class="status status-{{ st }}">{{ statuses[st] }}</span>
+{%- endmacro %}
+
+{% macro scan_buttons(csrf_token, graph_configured, compact=False) -%}
+<form method="post" action="/scan" class="scan-form">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <button type="submit" name="mode" value="live" class="btn btn-primary"
+    {% if not graph_configured %}disabled title="Add your app registration details to .env first"{% endif %}>
+    {{ 'Rescan tenant' if compact else 'Scan my tenant' }}
+  </button>
+  <button type="submit" name="mode" value="demo" class="btn">{{ 'Demo scan' if compact else 'Run a demo scan' }}</button>
+</form>
+{%- endmacro %}

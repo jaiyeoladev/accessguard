@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Identities{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Identities</h1>
+    <p class="muted">Inventory from scan #{{ state_obj.scan.id }}, ranked by open risk.</p>
+  </div>
+</div>
+
+<div class="tabs" role="tablist">
+  <a role="tab" href="/identities?kind=users" {% if kind == 'users' %}aria-selected="true"{% endif %}>People &amp; guests</a>
+  <a role="tab" href="/identities?kind=nonhuman" {% if kind == 'nonhuman' %}aria-selected="true"{% endif %}>Apps, service principals &amp; AI agents</a>
+</div>
+
+<form class="filters" method="get" action="/identities">
+  <input type="hidden" name="kind" value="{{ kind }}">
+  <label class="grow">Search <input type="search" name="q" value="{{ q }}" placeholder="Name, UPN or app ID"></label>
+  <button class="btn btn-primary" type="submit">Search</button>
+</form>
+
+<section class="panel flush">
+<div class="table-wrap">
+{% if kind == 'users' %}
+<table class="table">
+  <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Last sign-in</th><th>MFA</th><th>Directory roles</th><th class="num">Risk</th></tr></thead>
+  <tbody>
+  {% for r in rows %}{% set u = r.obj %}
+    <tr>
+      <td>{% if r.count %}<a href="/findings?state=all&amp;q={{ u.display_name|urlencode }}">{{ u.display_name }}</a>{% else %}{{ u.display_name }}{% endif %}
+        <div class="muted small">{{ u.upn }}{% if u.on_prem_synced %} · synced from AD{% endif %}</div></td>
+      <td>{{ u.user_type }}</td>
+      <td>{% if u.account_enabled %}Enabled{% else %}<span class="muted">Disabled</span>{% endif %}</td>
+      <td>{{ u.last_sign_in|ago if state_obj.snap.capabilities.get('sign_in_activity') else '—' }}</td>
+      <td>{% if u.mfa_registered is none %}<span class="muted">Unknown</span>{% elif u.mfa_registered %}Registered{% else %}<strong class="text-bad">None</strong>{% endif %}</td>
+      <td>{{ r.roles|join(', ') or '—' }}</td>
+      <td class="num">{% if r.score %}<strong>{{ r.score }}</strong>{% else %}<span class="muted">0</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<table class="table">
+  <thead><tr><th>Name</th><th>Publisher</th><th>Graph application permissions</th><th>Tenant-wide delegated consent</th><th>Directory roles</th><th class="num">Risk</th></tr></thead>
+  <tbody>
+  {% for r in rows %}{% set sp = r.obj %}
+    <tr>
+      <td>{% if r.count %}<a href="/findings?state=all&amp;q={{ sp.display_name|urlencode }}">{{ sp.display_name }}</a>{% else %}{{ sp.display_name }}{% endif %}
+        {% if sp.is_ai_agent %}<span class="pill pill-agent" title="Flagged by name/tag heuristic">Possible AI agent</span>{% endif %}
+        <div class="muted small">{{ sp.app_id }}</div></td>
+      <td>{{ 'Third-party' if r.third_party else 'This tenant' }}</td>
+      <td class="detail">{{ sp.app_permissions|join(', ') or '—' }}</td>
+      <td class="detail">{{ sp.delegated_admin_consent|join(', ') or '—' }}</td>
+      <td>{{ r.roles|join(', ') or '—' }}</td>
+      <td class="num">{% if r.score %}<strong>{{ r.score }}</strong>{% else %}<span class="muted">0</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+</div>
+</section>
+{% endblock %}

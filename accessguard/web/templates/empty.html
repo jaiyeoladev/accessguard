@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import scan_buttons %}
+{% block title %}Welcome{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">Identity security &amp; access governance</p>
+  <h1>Know who has access, find risky permissions and produce audit-ready evidence.</h1>
+  <p class="lede">AccessGuard reads your Microsoft Entra ID tenant with read-only permissions, flags dormant accounts,
+    unprotected admins and over-privileged apps and AI agents, and lets you record a review decision for every finding.</p>
+  {{ scan_buttons(csrf_token, graph_configured) }}
+  {% if not graph_configured %}
+  <p class="hint">No tenant connected yet. The demo scan uses a fictional tenant so you can explore first.
+    To scan a real tenant, follow <code>docs/entra-setup.md</code> and fill in <code>.env</code>.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Read-only permissions AccessGuard uses</h2>
+  <table class="table">
+    <thead><tr><th>Microsoft Graph application permission</th><th>Used for</th></tr></thead>
+    <tbody>
+    {% for name, purpose in permissions %}
+      <tr><td><code>{{ name }}</code></td><td>{{ purpose }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted small">If any of these are missing, the scan still runs and tells you which checks were skipped.</p>
+</section>
+{% endblock %}

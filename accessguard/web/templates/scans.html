@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_pill %}
+{% block title %}Scans & audit log{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Scans &amp; audit log</h1></div>
+  <div class="actions"><a class="btn" href="/export/report.html?download=1">Download evidence pack</a></div>
+</div>
+
+<section class="panel flush">
+  <h2 class="pad">Scan history</h2>
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>#</th><th>Collected</th><th>Tenant</th><th>Source</th><th class="num">Findings</th><th>Warnings</th></tr></thead>
+    <tbody>
+    {% for s in scans %}
+      <tr><td>{{ s.id }}</td><td>{{ s.collected_at|dt }}</td><td>{{ s.tenant_name }}</td>
+        <td>{{ 'Demo' if s.source == 'demo' else 'Microsoft Graph' }}</td><td class="num">{{ s.finding_count }}</td>
+        <td>{{ s.warnings|length }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="panel flush">
+  <h2 class="pad">Recent review decisions</h2>
+  {% if log %}
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>When</th><th>Reviewer</th><th>Decision</th><th>Finding</th><th>Justification</th></tr></thead>
+    <tbody>
+    {% for h in log %}
+      <tr><td>{{ h.at|dt }}</td><td>{{ h.reviewer }}</td><td>{{ status_pill(h.status) }}</td>
+        <td>{{ h.rule_id }} · {{ h.object_name }}</td><td class="detail">{{ h.justification or '—' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="muted pad">No decisions recorded yet.</p>{% endif %}
+</section>
+
+<section class="panel flush">
+  <h2 class="pad">Rule catalogue</h2>
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Rule</th><th>Title</th><th>Default severity</th><th>Category</th><th>Needs</th></tr></thead>
+    <tbody>
+    {% for r in rules %}
+      <tr><td>{{ r.id }}</td><td>{{ r.title }}</td><td>{{ r.severity|capitalize }}</td><td>{{ r.category }}</td>
+        <td class="muted small">{{ r.requires|join(', ') or '—' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}
